@@ -3,7 +3,7 @@
 #include "string.h"
 #include <math.h>
 
-#define MAX_PASS_LEN 20
+#define MAX_PASS_LEN 32
 #define MAX_N_PASS 5000000
 #define BUFF_LEN (1024*1024)
 #define HASH_SIZE (1024*1024*1024)
@@ -17,7 +17,6 @@ int hash_pass(char *pass)
   unsigned long long mul = 1;
   while(pass[i] != '\0')
   {
-    //for(int mn = 0; mn < i; mn++) mul *= 52;
     mul = mulmap[i];
     h += (unsigned long long)((pass[i]%256)+1)*mul;
     i++;
@@ -27,6 +26,7 @@ int hash_pass(char *pass)
 
 int main(int argc, char **argv)
 {
+  int most_hits = 0;
   char *pass = (char *)malloc(sizeof(char)*MAX_PASS_LEN*MAX_N_PASS);
   char test_pass[MAX_PASS_LEN];
   int pass_n = 0;
@@ -37,7 +37,7 @@ int main(int argc, char **argv)
   FILE *fp;
   int pass_exists = 0;
   int pass_conflicts = 0;
-  char *hash = (char *)calloc(HASH_SIZE,sizeof(char));
+  int **hash = (int **)calloc(HASH_SIZE,sizeof(int *));
 
   int hits = 0;
   int hitnews = 0;
@@ -66,28 +66,33 @@ int main(int argc, char **argv)
         if(hash[hash_val] != 0)
         {
           hits++;
-          /*
-          for(int i = 0; !pass_exists && i < pass_n; i++)
+          int n_hashhits = hash[hash_val][0];
+          int hashhit_i = 0;
+          for(int i = 0; !pass_exists && i < n_hashhits; i++)
           {
             pass_i = 0;
             pass_conflicts = 0;
-            while(!pass_conflicts && pass[i*MAX_PASS_LEN+pass_i] != '\0')
+            hashhit_i = hash[hash_val][i+1];
+            while(!pass_conflicts && pass[hashhit_i*MAX_PASS_LEN+pass_i] != '\0')
             {
-              if(pass[i*MAX_PASS_LEN+pass_i] != test_pass[pass_i]) pass_conflicts = true;
+              if(pass[hashhit_i*MAX_PASS_LEN+pass_i] != test_pass[pass_i]) pass_conflicts = true;
               pass_i++;
             }
             if(!pass_conflicts && test_pass[pass_i] == '\0')
               pass_exists = true;
           }
-          */
           if(!pass_exists)
           {
             hitnews++;
-            //printf("%d %s\n", pass_n, test_pass);
-            //printf("%llu\n", hash_val);
-            //printf("hit\n");
-            //printf("new\n");
-            //printf("\n");
+            if((n_hashhits+1)%5 == 0)
+            {
+              hash[hash_val] = (int *)realloc(hash[hash_val],(n_hashhits+1+5)*sizeof(int));
+              for(int j = n_hashhits+1; j < n_hashhits+5; j++)
+                hash[hash_val][j] = 0;
+            }
+            hash[hash_val][0]++;
+            if(n_hashhits+1 > most_hits) most_hits = n_hashhits+1;
+            hash[hash_val][n_hashhits+1] = pass_n;
           }
           else
             hitolds++;
@@ -95,12 +100,11 @@ int main(int argc, char **argv)
         else
         {
           misses++;
-          hash[hash_val] = 1;
-          //printf("%d %s\n", pass_n, test_pass);
-          //printf("%llu\n", hash_val);
-          //printf("miss\n");
-          //printf("gen\n");
-          //printf("\n");
+          hash[hash_val] = (int *)realloc(hash[hash_val],5*sizeof(int));
+          for(int j = 0; j < 5; j++)
+            hash[hash_val][j] = 0;
+          hash[hash_val][0] = 1;
+          hash[hash_val][1] = pass_n;
         }
         //append
         if(!pass_exists)
@@ -114,7 +118,6 @@ int main(int argc, char **argv)
           pass_n++;
         }
 
-        //printf("%d\n%d\n%d\n%d\n\n", hits,hitnews,hitolds,misses);
         pass_i = 0;
       }
       buff_i++;
@@ -154,5 +157,7 @@ int main(int argc, char **argv)
   fwrite(buff,sizeof(char),buff_i,fp);
 
   fclose(fp);
+
+  printf("%d\n",most_hits);
 }
 
