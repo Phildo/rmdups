@@ -44,7 +44,10 @@ int main(int argc, char **argv)
   int hitolds = 0;
   int misses = 0;
 
-  fp = fopen("password.txt", "r");
+  if(argc > 1)
+    fp = fopen(argv[1], "r");
+  else
+    fp = fopen("password.txt", "r");
 
   buff_l = fread(buff,sizeof(char),BUFF_LEN,fp);
   while(buff_l > 0)
@@ -129,7 +132,7 @@ int main(int argc, char **argv)
   fclose(fp);
 
   //write
-  fp = fopen("rmdupspassword.txt", "w+");
+  fp = stdout;
 
   buff_i = 0;
   pass_i = 0;
