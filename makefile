@@ -1,14 +1,14 @@
-make: a.out
+make: rmdups
 	
 
 run: rmdupspassword.txt
 	
 
 debug:
-	gcc -ggdb3 rmdups.cpp && gdb ./a.out
+	gcc -ggdb3 rmdups.cpp && gdb ./rmdups
 
-a.out: rmdups.cpp
+rmdups: rmdups.cpp
 	gcc rmdups.cpp
 
-rmdupspassword.txt: a.out
-	./a.out
+rmdupspassword.txt: rmdups
+	./rmdups
